@@ -32,3 +32,32 @@ model_overrides:
   classifier: ""
   composer: ""
   utility: ""
+
+# --- PLAN_AMENDMENTS_R1.md §A11 additions ---
+
+# Cap composer context to fit smaller local models.
+context_budget_chars: 60000
+
+# Reggie's quality-mode ReAct loop iteration cap (Vane uses 25; we throttle).
+quality_max_iterations: 10
+
+# Per-page semaphore for the chunked extractor LLM (improves on Vane's unbounded Promise.all).
+scrape_extractor_concurrency: 3
+
+# Stock widget guardrails.
+stock_comparison_max: 2
+stock_cache_ttl_seconds: 300
+
+# Embedding-based rerank thresholds (helpers/reranker.py).
+rerank:
+  cosine_keep_threshold: 0.5
+  cosine_dedup_threshold: 0.75
+
+# SearxNG client tuning (helpers/searxng_client.py).
+searxng:
+  pagination_pages: 1
+  time_range_default: any
+
+# WebUI / scraper toggles.
+webui:
+  scraper_fallback_playwright: false
