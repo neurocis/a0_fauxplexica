@@ -11,6 +11,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import importlib
+import sys
 from dataclasses import asdict, is_dataclass
 from typing import Any, Awaitable, Callable
 
@@ -106,6 +108,10 @@ async def run_fauxplexica_search(
         chat_history=history,
         classification=classification_obj,
         research=research,
+        # Canonical Compo API names. Keep the legacy aliases below so tests and
+        # future narrower callables can choose either contract.
+        search_findings=sources,
+        widget_outputs=widgets,
         sources=sources,
         widgets=widgets,
         mode=mode,
@@ -131,10 +137,25 @@ async def run_fauxplexica_search(
     }
 
 
+def _load_optional_module(short_name: str) -> Any:
+    """Load a sibling helper module while respecting explicit test/runtime overrides.
+
+    Tests and higher-level integrations may inject ``helpers.researcher`` or
+    ``helpers.composer`` directly into ``sys.modules``. Prefer that explicit
+    entry over package attributes so lazy imports remain mockable after the real
+    modules are merged.
+    """
+    package = __package__ or "helpers"
+    module_name = f"{package}.{short_name}"
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+    return importlib.import_module(f".{short_name}", package)
+
+
 async def _run_research(**kwargs: Any) -> dict[str, Any]:
     """Invoke Reggie's researcher if present; otherwise return an empty result."""
     try:
-        from . import researcher  # pylint: disable=import-outside-toplevel
+        researcher = _load_optional_module("researcher")
     except Exception as exc:  # noqa: BLE001
         _log.warning("researcher import failed; using empty fallback: %s", exc)
         return {"sources": [], "findings": [], "warning": "TODO: researcher pending"}
@@ -150,7 +171,7 @@ async def _run_research(**kwargs: Any) -> dict[str, Any]:
 async def _run_composer(**kwargs: Any) -> str:
     """Invoke Compo's composer if present; otherwise return deterministic text."""
     try:
-        from . import composer  # pylint: disable=import-outside-toplevel
+        composer = _load_optional_module("composer")
     except Exception as exc:  # noqa: BLE001
         _log.warning("composer import failed; using placeholder answer: %s", exc)
         return "Composer pending: Fauxplexica gathered context, but answer composition is not implemented yet."
@@ -191,7 +212,12 @@ def _normalise_research_output(raw: Any) -> dict[str, Any]:
         return {"sources": research, "findings": []}
     if not isinstance(research, dict):
         return {"sources": [], "findings": [], "raw": research}
-    sources = research.get("sources") or research.get("source_results") or []
+    sources = (
+        research.get("search_findings")
+        or research.get("sources")
+        or research.get("source_results")
+        or []
+    )
     if not isinstance(sources, list):
         sources = list(sources) if isinstance(sources, tuple) else []
     research["sources"] = [_to_plain_dict(source) for source in sources]
