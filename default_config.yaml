@@ -1,0 +1,34 @@
+# Default configuration for A0_Fauxplexica plugin.
+# Override per-project or per-agent via the plugin settings panel.
+
+# Meta-search backend (BYO SearxNG instance — see README).
+searxng_url: ""
+
+# Default search depth/latency mode: speed | balanced | quality
+default_mode: balanced
+
+# Source category flags surfaced in the WebUI picker.
+sources:
+  web: true
+  discussions: false
+  academic: true
+
+# Built-in widget toggles.
+widgets_enabled:
+  weather: true
+  calculator: true
+  stock: true
+
+# Hard cap on sources retained per query after dedup/trust scoring.
+max_sources_per_query: 12
+
+# Citation rendering style: inline_bracket | footnote
+citation_style: inline_bracket
+
+# Model role overrides — leave empty to fall back to _model_config defaults.
+# Actual preset wiring is handled later by _model_config; this skeleton
+# documents the intended split (fast classifier / strong composer / utility).
+model_overrides:
+  classifier: ""
+  composer: ""
+  utility: ""
