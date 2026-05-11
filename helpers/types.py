@@ -10,12 +10,19 @@ Part of the A0_Fauxplexica plugin. See PLAN_PHASE1.md §3 / PLAN_AMENDMENTS_R1.m
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 __all__ = [
     "SearchResult",
     "PickerOutput",
     "ExtractorChunkOutput",
+    "RoutingWidgets",
+    "RoutingFlags",
+    "StyleHints",
+    "ClassifierOutput",
+    "PrimaryType",
+    "Freshness",
+    "DepthHint",
     "to_dict",
     "from_dict",
 ]
@@ -133,3 +140,116 @@ def _safe_float(v: Any) -> Optional[float]:
         return float(v)
     except (TypeError, ValueError):
         return None
+
+
+# ---------------------------------------------------------------------------
+# Classy — classifier output schema (PLAN_AMENDMENTS_R1.md §A5)
+# ---------------------------------------------------------------------------
+
+PrimaryType = Literal[
+    "general",
+    "academic_research",
+    "recent_news",
+    "weather",
+    "people",
+    "coding",
+    "recipe",
+    "translation",
+    "creative_writing",
+    "science_math",
+    "url_lookup",
+]
+
+Freshness = Literal["any", "week", "day"]
+DepthHint = Literal["short", "medium", "deep"]
+
+
+@dataclass
+class RoutingWidgets:
+    """Per-widget enable flags emitted by the classifier.
+
+    These are advisory; :func:`helpers.classifier.classify` AND-gates them
+    against caller-provided settings before returning.
+    """
+
+    weather: bool = False
+    stock: bool = False
+    calculation: bool = False
+
+    def to_dict(self) -> Dict[str, bool]:
+        """Return a plain dict matching the §A5 nested widget schema."""
+        return {
+            "weather": self.weather,
+            "stock": self.stock,
+            "calculation": self.calculation,
+        }
+
+
+@dataclass
+class RoutingFlags:
+    """Tool-routing flags — the *which-tools-fire* axis.
+
+    Ports Vane's classifier booleans 1:1, plus a nested widget block.
+    Orthogonal to :class:`StyleHints` (the *how-to-answer* axis).
+    """
+
+    skip_search: bool = False
+    personal_search: bool = False
+    academic_search: bool = False
+    discussion_search: bool = False
+    widgets: RoutingWidgets = field(default_factory=RoutingWidgets)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a plain dict matching the §A5 routing schema."""
+        return {
+            "skip_search": self.skip_search,
+            "personal_search": self.personal_search,
+            "academic_search": self.academic_search,
+            "discussion_search": self.discussion_search,
+            "widgets": self.widgets.to_dict(),
+        }
+
+
+@dataclass
+class StyleHints:
+    """Answer-style hints — the *how-to-answer* axis.
+
+    Drives composer template selection (``primary_type``), SearxNG
+    ``time_range`` (``freshness``), and composer verbosity (``depth_hint``).
+    """
+
+    primary_type: PrimaryType = "general"
+    freshness: Freshness = "any"
+    depth_hint: DepthHint = "medium"
+
+    def to_dict(self) -> Dict[str, str]:
+        """Return a plain dict matching the §A5 style schema."""
+        return {
+            "primary_type": self.primary_type,
+            "freshness": self.freshness,
+            "depth_hint": self.depth_hint,
+        }
+
+
+@dataclass
+class ClassifierOutput:
+    """Top-level classifier result.
+
+    Schema mirrors PLAN_AMENDMENTS_R1.md §A5. ``_fastpath_reason`` is a
+    debug-only field set when deterministic heuristics bypass the LLM.
+    """
+
+    routing: RoutingFlags = field(default_factory=RoutingFlags)
+    style: StyleHints = field(default_factory=StyleHints)
+    standalone_followup: str = ""
+    detected_urls: List[str] = field(default_factory=list)
+    _fastpath_reason: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialise to the wire schema, omitting debug-only fields."""
+        return {
+            "routing": self.routing.to_dict(),
+            "style": self.style.to_dict(),
+            "standalone_followup": self.standalone_followup,
+            "detected_urls": list(self.detected_urls),
+        }
