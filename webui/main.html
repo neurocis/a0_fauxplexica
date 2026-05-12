@@ -1,13 +1,84 @@
-<!-- TODO: WebUI — Fauxplexica search panel; see PLAN_PHASE1.md §3 -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>A0_Fauxplexica — Search</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 16px; }
+    .fpx-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; }
+    .fpx-card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 8px; padding: 12px; }
+    .fpx-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .fpx-input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); font: inherit; }
+    .fpx-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: color-mix(in srgb, currentColor 8%, transparent); font: inherit; cursor: pointer; }
+    .fpx-btn[aria-pressed="true"] { background: color-mix(in srgb, royalblue 30%, transparent); }
+    .fpx-chip { padding: 4px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); cursor: pointer; }
+    .fpx-chip[aria-pressed="true"] { background: color-mix(in srgb, mediumseagreen 30%, transparent); }
+    .fpx-block { margin: 6px 0; padding: 6px 8px; border-left: 3px solid color-mix(in srgb, royalblue 50%, transparent); background: color-mix(in srgb, currentColor 6%, transparent); border-radius: 6px; white-space: pre-wrap; }
+    .fpx-block[data-type="error"] { border-color: tomato; background: color-mix(in srgb, tomato 12%, transparent); }
+    .fpx-cite { color: royalblue; cursor: pointer; text-decoration: none; }
+    .fpx-cite:hover { text-decoration: underline; }
+    .fpx-cite.active { background: color-mix(in srgb, royalblue 25%, transparent); border-radius: 3px; }
+    .fpx-side { display: flex; flex-direction: column; gap: 8px; }
+    .fpx-side .fauxplexica-citation-card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 8px; padding: 10px; }
+    .fpx-side .fauxplexica-citation-card.active { border-color: royalblue; }
+    .fpx-side .fauxplexica-citation-card a { color: inherit; text-decoration: none; }
+    .fpx-meta { font-size: 12px; opacity: 0.75; }
+    .fpx-uploads { display: flex; flex-direction: column; gap: 6px; }
+    .fpx-error { color: tomato; }
+  </style>
 </head>
 <body>
-  <section id="fauxplexica-panel">
-    <!-- TODO(WebUI): search bar, mode toggle, source chips, answer pane, citation sidebar -->
-  </section>
+  <main class="fpx-grid" id="fauxplexica-panel">
+    <section class="fpx-card">
+      <h1 style="margin:0 0 8px 0;font-size:18px;">A0_Fauxplexica</h1>
+      <form id="fpx-form" class="fpx-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <label for="fpx-query" class="fpx-meta">Ask a question</label>
+        <input id="fpx-query" class="fpx-input" type="text" placeholder="Search the web with citations…" autocomplete="off" required />
+        <div class="fpx-row" id="fpx-modes" role="group" aria-label="Search mode">
+          <button type="button" class="fpx-btn" data-mode="speed">Speed</button>
+          <button type="button" class="fpx-btn" data-mode="balanced" aria-pressed="true">Balanced</button>
+          <button type="button" class="fpx-btn" data-mode="quality">Quality</button>
+          <label class="fpx-meta" style="margin-left:auto;"><input id="fpx-stream" type="checkbox" checked /> Stream</label>
+        </div>
+        <div class="fpx-row" id="fpx-sources" aria-label="Sources"></div>
+        <div class="fpx-row" id="fpx-widgets" aria-label="Widgets"></div>
+        <div class="fpx-row">
+          <button class="fpx-btn" type="submit" id="fpx-submit">Search</button>
+          <button class="fpx-btn" type="button" id="fpx-cancel" disabled>Stop</button>
+          <span class="fpx-meta" id="fpx-status">Ready.</span>
+        </div>
+        <div id="fpx-config-warning" class="fpx-meta fpx-error" hidden></div>
+      </form>
+      <section class="fpx-card" style="margin-top:12px;">
+        <h2 style="margin:0 0 6px 0;font-size:14px;">Uploads</h2>
+        <div class="fpx-uploads">
+          <div class="fpx-row">
+            <input id="fpx-upload-path" class="fpx-input" type="text" placeholder="Absolute file path to ingest (PDF, TXT, MD, CSV, DOCX)" />
+            <button id="fpx-upload-btn" class="fpx-btn" type="button">Upload</button>
+          </div>
+          <div class="fpx-meta" id="fpx-upload-status"></div>
+          <div class="fpx-row">
+            <input id="fpx-uploads-query" class="fpx-input" type="text" placeholder="Search uploaded files" />
+            <button id="fpx-uploads-search-btn" class="fpx-btn" type="button">Search Uploads</button>
+          </div>
+          <div class="fpx-meta" id="fpx-uploads-results"></div>
+        </div>
+      </section>
+      <section class="fpx-card" style="margin-top:12px;">
+        <h2 style="margin:0 0 6px 0;font-size:14px;">Answer</h2>
+        <div id="fpx-blocks"></div>
+        <article id="fpx-answer" class="fpx-block" data-type="text" style="display:none;"></article>
+        <div class="fpx-meta" id="fpx-summary"></div>
+      </section>
+    </section>
+    <aside class="fpx-card fpx-side" aria-label="Citation sidebar">
+      <h2 style="margin:0;font-size:14px;">Sources</h2>
+      <div class="fpx-meta">Rich sidebar citations</div>
+      <div id="fpx-citations"></div>
+    </aside>
+  </main>
+  <link rel="import" href="citation-card.html" />
+  <script type="module" src="fauxplexica-store.js"></script>
 </body>
 </html>
