@@ -50,10 +50,10 @@ class RaisingLLM:
 
 class EmitStream:
     def __init__(self) -> None:
-        self.events: list[tuple[str, str]] = []
+        self.events: list[tuple[str, dict]] = []
 
-    async def emit(self, block_type: str, content: str) -> None:
-        self.events.append((block_type, content))
+    async def emit_block(self, block_type: str, data: dict) -> None:
+        self.events.append((block_type, dict(data)))
 
 
 def _classification(primary_type: str) -> ClassifierOutput:
@@ -216,7 +216,7 @@ async def test_block_stream_optional_noop_and_emit_behavior():
         block_stream=stream,
     )
     assert out == "answer with stream"
-    assert stream.events == [("text", "answer with stream")]
+    assert stream.events == [("text", {"text": "answer with stream"})]
 
 
 @pytest.mark.asyncio

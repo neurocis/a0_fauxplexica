@@ -223,13 +223,18 @@ async def _maybe_await(value: Any) -> Any:
 
 
 async def _emit_block(block_stream: Any, text: str) -> None:
-    """Best-effort stream emission for several likely block-stream shapes."""
+    """Best-effort stream emission for several likely block-stream shapes.
+
+    Prefers the Vane-compatible BlockStream.emit_block('text', {...}) envelope
+    when available, falls back to .write(text)/callable(text) for simple
+    adapters used in older tests.
+    """
 
     if block_stream is None:
         return
     try:
-        if hasattr(block_stream, "emit"):
-            await _maybe_await(block_stream.emit("text", text))
+        if hasattr(block_stream, "emit_block"):
+            await _maybe_await(block_stream.emit_block("text", {"text": text}))
         elif hasattr(block_stream, "write"):
             await _maybe_await(block_stream.write(text))
         elif callable(block_stream):
