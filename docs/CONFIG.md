@@ -12,6 +12,8 @@ searxng_url: ""
 
 Base URL for your BYO SearxNG instance. A0_Fauxplexica does not bundle SearxNG. Set this before expecting web/academic/discussion research to work.
 
+If this is empty and sources are enabled, the search route returns `missing_searxng_url` and the WebUI surfaces an inline warning.
+
 Operational notes:
 
 - Academic engines may require enabling in SearxNG's `engines.yml`.
@@ -45,17 +47,13 @@ sources:
 
 Default source categories surfaced to the classifier/search stack and WebUI picker.
 
-- `web` — general web results.
-- `discussions` — forum/social/discussion sources where supported by SearxNG.
-- `academic` — scholarly sources/engines where enabled in SearxNG.
-
 ### `max_sources_per_query`
 
 ```yaml
 max_sources_per_query: 12
 ```
 
-Hard cap on retained sources after research, deduplication, and citation registry construction. This is separate from intermediate search result counts.
+Hard cap on retained sources after research, deduplication, and citation registry construction.
 
 ### `context_budget_chars`
 
@@ -63,7 +61,7 @@ Hard cap on retained sources after research, deduplication, and citation registr
 context_budget_chars: 60000
 ```
 
-Composer context budget. Added by Amendments R1 to keep final context usable with smaller local models.
+Composer context budget for the final answer.
 
 ### `quality_max_iterations`
 
@@ -71,7 +69,7 @@ Composer context budget. Added by Amendments R1 to keep final context usable wit
 quality_max_iterations: 10
 ```
 
-Maximum Reggie research-loop iterations in quality mode. Vane uses a larger cap; Phase 1 intentionally throttles cost and latency.
+Maximum Reggie research-loop iterations in quality mode. Phase 1 intentionally throttles cost and latency.
 
 ## Citation behavior
 
@@ -81,12 +79,11 @@ Maximum Reggie research-loop iterations in quality mode. Vane uses a larger cap;
 citation_style: inline_bracket
 ```
 
-Configured citation style. Phase 1 targets Perplexity/Vane-style inline brackets such as `[1]`.
+Phase 1 targets inline bracket citations such as `[1]`. The post-hoc validator supports the following policies (used by integrators):
 
-Allowed/planned values:
-
-- `inline_bracket` — active target.
-- `footnote` — reserved by config; do not assume full support until citation/API owners finalize it.
+- `keep` — leave the answer unchanged; still report valid/invalid/uncited indices.
+- `strip_invalid` — remove out-of-range citation tokens only.
+- `annotate_invalid` — replace invalid tokens with `[invalid:N]`.
 
 ## Widgets
 
@@ -99,13 +96,7 @@ widgets_enabled:
   stock: true
 ```
 
-Global defaults for built-in widgets. The classifier still decides whether a widget is relevant for a query; these flags allow operators to disable a widget entirely.
-
-Widget notes:
-
-- Weather uses Nominatim and Open-Meteo.
-- Calculator uses `asteval` rather than Python `eval`.
-- Stock uses `yfinance` and caching to reduce Yahoo rate-limit pain.
+Global defaults for built-in widgets. The classifier still decides whether a widget is relevant for a query.
 
 ### `stock_comparison_max`
 
@@ -113,7 +104,7 @@ Widget notes:
 stock_comparison_max: 2
 ```
 
-Maximum comparison tickers for the stock widget. Amendments R1 lowers this versus Vane because Yahoo requests can multiply quickly.
+Maximum comparison tickers for the stock widget.
 
 ### `stock_cache_ttl_seconds`
 
@@ -134,7 +125,7 @@ model_overrides:
   utility: ""
 ```
 
-Optional model role override strings. Empty values mean the plugin should fall back to A0 `_model_config` defaults.
+Optional model role override strings. Empty values fall back to A0 `_model_config` defaults.
 
 Intended roles:
 
@@ -142,7 +133,7 @@ Intended roles:
 - `composer` — stronger final answer writing.
 - `utility` — lower-cost helper calls such as extraction or parameter parsing.
 
-Exact preset wiring is owned by later integration with `_model_config`.
+The `Fauxplexica Research` preset wires these to the project's chat/utility/embedding models.
 
 ## Reranking
 
@@ -153,16 +144,12 @@ rerank:
   cosine_keep_threshold: 0.5
 ```
 
-Minimum query/result cosine similarity for keeping speed/balanced results when embeddings are available.
-
 ### `rerank.cosine_dedup_threshold`
 
 ```yaml
 rerank:
   cosine_dedup_threshold: 0.75
 ```
-
-Similarity threshold above which results are treated as duplicates in embedding-based deduplication.
 
 Embedding failures should degrade gracefully by keeping results rather than failing the whole search.
 
@@ -175,8 +162,6 @@ searxng:
   pagination_pages: 1
 ```
 
-Number of SearxNG pages to request when pagination is enabled. Phase 1 defaults to page 1 only.
-
 ### `searxng.time_range_default`
 
 ```yaml
@@ -184,9 +169,7 @@ searxng:
   time_range_default: any
 ```
 
-Default SearxNG freshness/time range. The classifier's `style.freshness` may override this for recent-news or freshness-sensitive queries.
-
-Planned values align with SearxNG support and classifier hints such as `any`, `week`, and `day`.
+The classifier's `style.freshness` may override the default for recent-news or freshness-sensitive queries.
 
 ## Scraping and extraction
 
@@ -196,8 +179,6 @@ Planned values align with SearxNG support and classifier hints such as `any`, `w
 scrape_extractor_concurrency: 3
 ```
 
-Per-page concurrency cap for quality-mode chunk extraction. This improves on Vane's unbounded parallel extractor calls.
-
 ### `webui.scraper_fallback_playwright`
 
 ```yaml
@@ -205,7 +186,7 @@ webui:
   scraper_fallback_playwright: false
 ```
 
-Phase 2 toggle for Playwright fallback on JS-heavy sites. Phase 1 intentionally uses Trafilatura to avoid a Chromium dependency. Do not assume this flag performs a full Playwright scrape until the Phase 2 fallback lands.
+Phase 2 toggle for Playwright fallback on JS-heavy sites. Phase 1 uses Trafilatura.
 
 ## Configuration checklist
 
