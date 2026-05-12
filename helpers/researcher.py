@@ -255,28 +255,44 @@ def dedupe_search_results(results: Sequence[SearchResult]) -> list[SearchResult]
 
 
 async def _emit_block(block_stream, block_type: str, data: dict[str, Any]) -> None:
+    """Forward a research step to a block-stream-like target.
+
+    Researcher emits Vane block types (``searching``/``search_results``/
+    ``reading``/``source``), so the preferred path is
+    ``BlockStream.emit_block(block_type, data)``. Falls back to legacy
+    callables/writers for older test doubles. Errors never propagate so
+    streaming UX problems can't break the research loop.
+    """
+
     if block_stream is None:
         return
-    payload = {"type": block_type, "data": data}
-    for method_name in ("emit", "emit_block", "update_block"):
-        method = getattr(block_stream, method_name, None)
-        if method is None:
-            continue
-        try:
-            value = method(payload) if method_name == "emit" else method(block_type, data)
-            if inspect.isawaitable(value):
-                await value
+    try:
+        emit_block = getattr(block_stream, "emit_block", None)
+        if emit_block is not None:
+            result = emit_block(block_type, data)
+            if inspect.isawaitable(result):
+                await result
             return
-        except TypeError:
-            try:
-                value = method(payload)
-                if inspect.isawaitable(value):
-                    await value
-                return
-            except Exception:  # noqa: BLE001
-                return
-        except Exception:  # noqa: BLE001
+        if callable(block_stream):
+            result = block_stream(block_type, data)
+            if inspect.isawaitable(result):
+                await result
             return
+        write = getattr(block_stream, "write", None)
+        if write is not None:
+            result = write({"type": block_type, "data": data})
+            if inspect.isawaitable(result):
+                await result
+            return
+        # Last-ditch: try legacy emit(payload) form for adapters that only
+        # expose a single emit(...) entrypoint.
+        emit = getattr(block_stream, "emit", None)
+        if emit is not None:
+            result = emit({"type": block_type, "data": data})
+            if inspect.isawaitable(result):
+                await result
+    except Exception as exc:  # noqa: BLE001 - streaming must not break research
+        log.warning("research block_stream emission failed (%s): %s", block_type, exc)
 
 
 def _to_search_result(raw: SearchResult | dict[str, Any]) -> SearchResult:
