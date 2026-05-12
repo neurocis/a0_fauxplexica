@@ -1,22 +1,344 @@
-<!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <title>A0_Fauxplexica — Settings</title>
-  <style>
-    body { font-family: system-ui, sans-serif; padding: 16px; }
-    .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
-    .input { padding: 6px 8px; min-width: 320px; }
-    .meta { font-size: 12px; opacity: 0.75; }
-  </style>
+    <title>A0_Fauxplexica Configuration</title>
 </head>
+
 <body>
-  <h1 style="font-size:18px;margin:0 0 12px 0;">A0_Fauxplexica Settings</h1>
-  <div class="meta">Configure via plugin settings. This panel reads <code>GET /api/plugins/a0_fauxplexica/providers</code>.</div>
-  <section id="fpx-cfg-content" class="row" style="flex-direction:column;align-items:stretch;"></section>
-  <script type="module">
-    import { renderConfigPanel } from "./fauxplexica-store.js";
-    renderConfigPanel(document.getElementById("fpx-cfg-content"));
-  </script>
+    <div x-data>
+        <template x-if="config">
+            <div>
+                <!-- ===== CORE SETTINGS ===== -->
+                <div class="section-title">A0_Fauxplexica Search Configuration</div>
+                <div class="section-description">
+                    Configure the Perplexity/Vane-style answering engine. A0_Fauxplexica uses your own
+                    <a href="https://github.com/searxng/searxng" target="_blank">SearxNG</a>
+                    instance for web search, then researches, composes, streams, and validates answers with inline citations.
+                </div>
+
+                <div class="section-description" style="margin-bottom: 1rem; padding: 0.5rem; background: var(--bg-secondary, #1a1a2e); border-radius: 6px; border-left: 3px solid var(--accent, #6c63ff);">
+                    <strong>🔎 Required</strong> — Set <code>SearxNG URL</code> to a reachable instance with JSON enabled:
+                    <code>search.formats: [html, json]</code>.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">SearxNG URL</div>
+                        <div class="field-description">
+                            Base URL for your BYO SearxNG instance. Example: <code>http://198.18.88.12</code>.
+                            The plugin calls <code>/search?format=json</code>.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text"
+                               x-model="config.searxng_url"
+                               placeholder="http://198.18.88.12" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Default Mode</div>
+                        <div class="field-description">
+                            Search/research depth used when the UI or API request does not specify a mode.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <select x-model="config.default_mode">
+                            <option value="speed">⚡ Speed</option>
+                            <option value="balanced">⚖ Balanced</option>
+                            <option value="quality">★ Quality (Beta)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Maximum Sources Per Query</div>
+                        <div class="field-description">
+                            Hard cap on sources retained after search, deduplication, and ranking.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.max_sources_per_query"
+                               placeholder="12" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Citation Style</div>
+                        <div class="field-description">
+                            Phase 1 is optimized for inline bracket citations like <code>[1]</code>, <code>[2]</code>.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <select x-model="config.citation_style">
+                            <option value="inline_bracket">Inline bracket citations [1]</option>
+                            <option value="footnote">Footnote-style citations</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ===== SOURCE TOGGLES ===== -->
+                <div style="margin-top: 1.5rem;"></div>
+                <div class="section-title">Source Toggles</div>
+                <div class="section-description">
+                    Defaults for the WebUI/API source picker. The UI label <strong>Social</strong> maps to the backend key <code>discussions</code>.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Web Sources</div>
+                        <div class="field-description">General web results.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.sources.web" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Academic Sources</div>
+                        <div class="field-description">Academic/research-oriented engines where available.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.sources.academic" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Social / Discussions Sources</div>
+                        <div class="field-description">Discussion/social engines. Stored as <code>sources.discussions</code>.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.sources.discussions" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ===== WIDGET TOGGLES ===== -->
+                <div style="margin-top: 1.5rem;"></div>
+                <div class="section-title">Widget Toggles</div>
+                <div class="section-description">
+                    Enable or disable built-in answer widgets exposed in the WebUI.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Weather Widget</div>
+                        <div class="field-description">Allow weather widget routing.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.widgets_enabled.weather" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Calculator Widget</div>
+                        <div class="field-description">Allow calculator/math widget routing.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.widgets_enabled.calculator" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Stock Widget</div>
+                        <div class="field-description">Allow stock/market widget routing.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.widgets_enabled.stock" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ===== EMBEDDINGS ===== -->
+                <div style="margin-top: 1.5rem;"></div>
+                <div class="section-title">Embedding API for Reranking</div>
+                <div class="section-description">
+                    Optional OpenAI-compatible embeddings endpoint. Leave blank to use platform/default behavior or the reranker's graceful fallback.
+                    These settings are for API-backed embedding rerank smoke/runtime integration; no local model is bundled.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Embedding Base URL</div>
+                        <div class="field-description">
+                            OpenAI-compatible base URL. Examples: <code>https://api.openai.com/v1</code> or <code>http://localhost:11434/v1</code>.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text"
+                               x-model="config.embeddings.base_url"
+                               placeholder="https://api.openai.com/v1" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Embedding API Key</div>
+                        <div class="field-description">
+                            API key for the embedding endpoint. Local gateways may leave this blank. Prefer secrets where possible.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password"
+                               x-model="config.embeddings.api_key"
+                               placeholder="sk-..." />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Embedding Model</div>
+                        <div class="field-description">
+                            Model name sent to <code>/embeddings</code>. Examples: <code>text-embedding-3-small</code>, <code>nomic-embed-text</code>.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text"
+                               x-model="config.embeddings.model"
+                               placeholder="text-embedding-3-small" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Embedding Timeout Seconds</div>
+                        <div class="field-description">Request timeout for embedding API calls.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.embeddings.timeout_seconds"
+                               placeholder="30" />
+                    </div>
+                </div>
+
+                <!-- ===== RERANK / ADVANCED ===== -->
+                <div style="margin-top: 1.5rem;"></div>
+                <div class="section-title">Rerank and Advanced Settings</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Cosine Keep Threshold</div>
+                        <div class="field-description">Minimum similarity retained by the reranker.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               step="0.01"
+                               min="0"
+                               max="1"
+                               x-model.number="config.rerank.cosine_keep_threshold"
+                               placeholder="0.5" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Cosine Dedup Threshold</div>
+                        <div class="field-description">Similarity threshold for near-duplicate removal.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               step="0.01"
+                               min="0"
+                               max="1"
+                               x-model.number="config.rerank.cosine_dedup_threshold"
+                               placeholder="0.75" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Context Budget Characters</div>
+                        <div class="field-description">Maximum rendered context characters for answer composition.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.context_budget_chars"
+                               placeholder="60000" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Quality Max Iterations</div>
+                        <div class="field-description">Upper bound for the quality-mode research loop.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.quality_max_iterations"
+                               placeholder="10" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">SearxNG Pagination Pages</div>
+                        <div class="field-description">Number of SearxNG result pages to request per query.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.searxng.pagination_pages"
+                               placeholder="1" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">SearxNG Default Time Range</div>
+                        <div class="field-description">Default time range sent to SearxNG.</div>
+                    </div>
+                    <div class="field-control">
+                        <select x-model="config.searxng.time_range_default">
+                            <option value="any">Any time</option>
+                            <option value="day">Past day</option>
+                            <option value="week">Past week</option>
+                            <option value="month">Past month</option>
+                            <option value="year">Past year</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Playwright Scraper Fallback</div>
+                        <div class="field-description">Experimental fallback for difficult pages. Disabled by default in Phase 1.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.webui.scraper_fallback_playwright" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="section-description" style="margin-top: 1rem; opacity: 0.75;">
+                    <strong>Note:</strong> If the plugin returns <code>missing_searxng_url</code>, set <strong>SearxNG URL</strong> above and save.
+                    If SearxNG returns 403 for JSON, add <code>json</code> to <code>search.formats</code> in SearxNG settings and restart SearxNG.
+                </div>
+            </div>
+        </template>
+    </div>
 </body>
 </html>
