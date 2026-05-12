@@ -94,7 +94,7 @@ class FauxplexicaProviders(ApiHandler):
             "sources": [
                 {"id": "web", "label": "Web", "enabled": bool(sources_cfg.get("web", True))},
                 {"id": "academic", "label": "Academic", "enabled": bool(sources_cfg.get("academic", True))},
-                {"id": "discussions", "label": "Discussions", "enabled": bool(sources_cfg.get("discussions", False))},
+                {"id": "discussions", "label": "Social", "enabled": bool(sources_cfg.get("discussions", False))},
             ],
             "widgets": [
                 {"id": "weather", "label": "Weather", "enabled": bool(widgets_cfg.get("weather", True))},

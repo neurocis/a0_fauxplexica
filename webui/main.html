@@ -14,6 +14,9 @@
     .fpx-btn[aria-pressed="true"] { background: color-mix(in srgb, royalblue 30%, transparent); }
     .fpx-chip { padding: 4px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); cursor: pointer; }
     .fpx-chip[aria-pressed="true"] { background: color-mix(in srgb, mediumseagreen 30%, transparent); }
+    .fpx-mode-btn { display: inline-flex; align-items: center; gap: 6px; }
+    .fpx-mode-icon { font-size: 14px; line-height: 1; }
+    .fpx-mode-beta { font-size: 10px; padding: 1px 6px; margin-left: 4px; border-radius: 999px; background: color-mix(in srgb, #2196F3 35%, transparent); color: white; font-weight: 600; letter-spacing: 0.5px; }
     .fpx-block { margin: 6px 0; padding: 6px 8px; border-left: 3px solid color-mix(in srgb, royalblue 50%, transparent); background: color-mix(in srgb, currentColor 6%, transparent); border-radius: 6px; white-space: pre-wrap; }
     .fpx-block[data-type="error"] { border-color: tomato; background: color-mix(in srgb, tomato 12%, transparent); }
     .fpx-cite { color: royalblue; cursor: pointer; text-decoration: none; }
@@ -36,9 +39,19 @@
         <label for="fpx-query" class="fpx-meta">Ask a question</label>
         <input id="fpx-query" class="fpx-input" type="text" placeholder="Search the web with citations…" autocomplete="off" required />
         <div class="fpx-row" id="fpx-modes" role="group" aria-label="Search mode">
-          <button type="button" class="fpx-btn" data-mode="speed">Speed</button>
-          <button type="button" class="fpx-btn" data-mode="balanced" aria-pressed="true">Balanced</button>
-          <button type="button" class="fpx-btn" data-mode="quality">Quality</button>
+          <button type="button" class="fpx-btn fpx-mode-btn" data-mode="speed" title="Fastest useful answer with minimal search depth.">
+            <span class="fpx-mode-icon" aria-hidden="true" style="color:#FF9800;">⚡</span>
+            <span class="fpx-mode-label">Speed</span>
+          </button>
+          <button type="button" class="fpx-btn fpx-mode-btn" data-mode="balanced" aria-pressed="true" title="Parallel research with good citation coverage.">
+            <span class="fpx-mode-icon" aria-hidden="true" style="color:#4CAF50;">⚖</span>
+            <span class="fpx-mode-label">Balanced</span>
+          </button>
+          <button type="button" class="fpx-btn fpx-mode-btn" data-mode="quality" title="Deeper multi-hop research, page reading and careful synthesis.">
+            <span class="fpx-mode-icon" aria-hidden="true" style="color:#2196F3;">★</span>
+            <span class="fpx-mode-label">Quality</span>
+            <span class="fpx-mode-beta" aria-label="Beta">Beta</span>
+          </button>
           <label class="fpx-meta" style="margin-left:auto;"><input id="fpx-stream" type="checkbox" checked /> Stream</label>
         </div>
         <div class="fpx-row" id="fpx-sources" aria-label="Sources"></div>

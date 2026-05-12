@@ -111,5 +111,7 @@ async def test_providers_lists_configured_capabilities(monkeypatch):
     assert out['ok'] is True
     assert out['providers'][0]['configured'] is True
     assert {s['id']: s['enabled'] for s in out['sources']} == {'web': True, 'academic': False, 'discussions': True}
+    labels = {s['id']: s['label'] for s in out['sources']}
+    assert labels['discussions'] == 'Social'
     assert [m for m in out['modes'] if m['default']][0]['id'] == 'quality'
     assert out['model_registry']['chat_providers'][0]['value'] == 'x'
