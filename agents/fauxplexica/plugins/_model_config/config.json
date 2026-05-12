@@ -1,0 +1,35 @@
+{
+  "allow_chat_override": true,
+  "chat_model": {
+    "provider": "other",
+    "name": "max",
+    "api_base": "http://198.18.88.38/v1",
+    "ctx_length": 200000,
+    "ctx_history": 0.7,
+    "vision": true,
+    "max_embeds": 10,
+    "rl_requests": 0,
+    "rl_input": 0,
+    "rl_output": 0,
+    "kwargs": {}
+  },
+  "utility_model": {
+    "provider": "other",
+    "name": "max-utility",
+    "api_base": "http://198.18.88.38/v1",
+    "ctx_length": 128000,
+    "ctx_input": 0.7,
+    "rl_requests": 0,
+    "rl_input": 0,
+    "rl_output": 0,
+    "kwargs": {}
+  },
+  "embedding_model": {
+    "provider": "huggingface",
+    "name": "sentence-transformers/all-MiniLM-L6-v2",
+    "api_base": "http://198.18.88.35/api/v1",
+    "rl_requests": 0,
+    "rl_input": 0,
+    "kwargs": {}
+  }
+}
