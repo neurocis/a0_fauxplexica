@@ -43,3 +43,20 @@ assert.ok(html.includes('beta '));
 assert.equal(blocksToText([{type:'text',data:{text:'x'}}]), 'x');
 assert.equal(blocksToText([]), '');
 console.log('WEBUI_STORE_TESTS_OK');
+
+
+// Recon R1 fix 5.1 / 5.2: parser supports Vane top-level block/blockId and legacy data.block.
+const envelopeStream = [
+  JSON.stringify({ type: 'init', data: { query: 'q' } }),
+  JSON.stringify({ type: 'block', block: { id: 'b1', type: 'text', data: { text: 'top-level' } } }),
+  JSON.stringify({ type: 'updateBlock', blockId: 'b1', patch: [{ op: 'replace', path: '/data/text', value: 'patched-top' }] }),
+  JSON.stringify({ type: 'block', data: { block: { id: 'b2', type: 'reasoning', data: { text: 'legacy' } } } }),
+  JSON.stringify({ type: 'done', data: {} }),
+].join('\n');
+const envelopeEvents = parseNdjsonStream(envelopeStream);
+assert.deepEqual(envelopeEvents.map(e => e.type), ['init', 'block', 'updateBlock', 'block', 'done']);
+assert.equal(envelopeEvents[1].block.id, 'b1');
+assert.equal(envelopeEvents[2].blockId, 'b1');
+assert.deepEqual(envelopeEvents[2].patch[0], { op: 'replace', path: '/data/text', value: 'patched-top' });
+assert.equal(envelopeEvents[3].data.block.id, 'b2');
+console.log('WEBUI_RECON_R1_PARSER_OK');
