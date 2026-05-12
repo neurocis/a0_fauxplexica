@@ -53,6 +53,16 @@ rerank:
   cosine_keep_threshold: 0.5
   cosine_dedup_threshold: 0.75
 
+# Optional OpenAI-compatible embeddings endpoint for live rerank smoke tests
+# and future runtime semantic reranking. Leave empty to use the platform/default
+# embedder path or the integration-test deterministic fallback.
+embeddings:
+  base_url: ""   # e.g. https://api.openai.com/v1 or http://localhost:11434/v1
+  api_key: ""    # prefer env/secret injection; local gateways may leave empty
+  model: ""      # e.g. text-embedding-3-small or nomic-embed-text
+  timeout_seconds: 30
+
+
 # SearxNG client tuning (helpers/searxng_client.py).
 searxng:
   pagination_pages: 1

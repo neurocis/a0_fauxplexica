@@ -197,3 +197,34 @@ Minimum useful setup:
 3. Confirm source defaults under `sources`.
 4. Disable any widgets that should not call external APIs.
 5. Tune model overrides only if `_model_config` defaults are not appropriate.
+
+## Embedding endpoint for reranker smoke tests
+
+A0_Fauxplexica supports live reranker smoke tests against an OpenAI-compatible
+embeddings API. This does **not** bundle or pin a local model; you provide the
+endpoint, API key, and model name.
+
+Runtime config documents the intended shape:
+
+```yaml
+embeddings:
+  base_url: "https://api.openai.com/v1"
+  api_key: "..."
+  model: "text-embedding-3-small"
+  timeout_seconds: 30
+```
+
+For integration tests, prefer environment variables so secrets are not committed:
+
+```bash
+SEARXNG_URL=http://198.18.88.12 \
+EMBEDDING_BASE_URL=https://api.openai.com/v1 \
+EMBEDDING_API_KEY=sk-... \
+EMBEDDING_MODEL=text-embedding-3-small \
+PYTHONPATH=/a0/plugins pytest -q tests/integration -m integration
+```
+
+`EMBEDDING_API_KEY` may be omitted for local OpenAI-compatible gateways that do
+not require authentication. If the embedding variables are not set, the reranker
+integration smoke uses a deterministic bag-of-words pseudo-embedder so the
+rerank machinery still runs end-to-end without a model dependency.
