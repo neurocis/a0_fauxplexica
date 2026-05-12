@@ -121,6 +121,7 @@ class UploadsManager:
                         "total_chunks": total_chunks,
                         "mime_type": detected_type,
                         "namespace": self.memory_subdir,
+                        "url": f"file_id://{assigned_file_id}",
                     },
                 )
                 for i, chunk in enumerate(chunks)
@@ -140,37 +141,82 @@ class UploadsManager:
             logger.exception("Failed to ingest upload %s", path)
             return self._error(str(exc))
 
+    RRF_K: ClassVar[int] = 60
+
     async def search(
         self,
-        query: str,
+        query: str | list[str],
         file_ids: list[str] | None = None,
         *,
         k: int = 8,
     ) -> list[dict[str, Any]]:
         """Search uploaded-file chunks for ``query``.
 
+        ``query`` may be a single string or a list of strings. When multiple
+        queries are supplied, results are fused with Reciprocal Rank Fusion
+        (``RRF_K = 60``) to match Vane's :class:`UploadStore` semantics.
+
         If ``file_ids`` is provided and non-empty, it is treated as an explicit
-        override by callers and used as a metadata filter.  Returned items use
-        ``{content, metadata, score}``; `_memory` exposes normalized relevance
-        scores when available, otherwise score is ``None``.
+        override by callers and used as a metadata filter. Returned items use
+        ``{content, metadata, score, rrf_score?}``; `_memory` exposes
+        normalized relevance scores when available, otherwise ``score`` is
+        ``None``.
         """
+        queries = [str(q).strip() for q in (query if isinstance(query, (list, tuple, set)) else [query]) if str(q).strip()]
+        if not queries:
+            return []
         try:
             memory = await self._get_memory()
             filter_expr = "area == 'fauxplexica_uploads'"
             if file_ids:
                 safe_ids = ", ".join(repr(str(fid)) for fid in file_ids)
                 filter_expr += f" and file_id in [{safe_ids}]"
+            top_k = max(1, int(k))
 
-            results = await memory.search_similarity_threshold(
-                query,
-                limit=max(1, int(k)),
-                threshold=0.0,
-                filter=filter_expr,
-            )
-            return [self._format_search_result(item) for item in results]
+            per_query_results: list[list[dict[str, Any]]] = []
+            for q in queries:
+                hits = await memory.search_similarity_threshold(
+                    q,
+                    limit=top_k,
+                    threshold=0.0,
+                    filter=filter_expr,
+                )
+                per_query_results.append([self._format_search_result(item) for item in hits])
+
+            if len(per_query_results) == 1:
+                return per_query_results[0]
+            return self._reciprocal_rank_fuse(per_query_results, top_k=top_k)
         except Exception as exc:
             logger.exception("Failed to search uploads")
             return [{"error": str(exc), "content": "", "metadata": {}, "score": None}]
+
+    @classmethod
+    def _reciprocal_rank_fuse(
+        cls,
+        ranked_lists: list[list[dict[str, Any]]],
+        *,
+        top_k: int,
+    ) -> list[dict[str, Any]]:
+        """Fuse multiple ranked result lists via Reciprocal Rank Fusion."""
+        fused: dict[str, dict[str, Any]] = {}
+        for ranked in ranked_lists:
+            for rank, item in enumerate(ranked):
+                meta = item.get("metadata") or {}
+                key = str(
+                    meta.get("id")
+                    or meta.get("url")
+                    or f"{meta.get('file_id', '')}::{meta.get('chunk_index', '')}::{item.get('content', '')[:48]}"
+                )
+                contribution = 1.0 / (rank + 1 + cls.RRF_K)
+                if key in fused:
+                    fused[key]["rrf_score"] = float(fused[key].get("rrf_score", 0.0)) + contribution
+                else:
+                    clone = dict(item)
+                    clone["metadata"] = dict(meta)
+                    clone["rrf_score"] = contribution
+                    fused[key] = clone
+        ordered = sorted(fused.values(), key=lambda entry: entry.get("rrf_score", 0.0), reverse=True)
+        return ordered[:top_k]
 
     async def list_files(self) -> list[dict[str, Any]]:
         """List distinct uploaded files indexed in this context namespace."""

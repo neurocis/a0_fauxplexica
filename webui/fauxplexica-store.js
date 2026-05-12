@@ -300,9 +300,13 @@ export async function initPanel({ root = document } = {}) {
         let mode = body.mode;
         let blocks = [];
         for (const evt of result.events) {
-          if (evt.type === "block" && evt.data && evt.data.type === "text" && evt.data.data && typeof evt.data.data.text === "string") answer = evt.data.data.text;
-          if (evt.type === "updateBlock" && evt.data && Array.isArray(evt.data.ops)) {
-            const replace = evt.data.ops.find((op) => op && op.op === "replace" && op.path === "/text");
+          if (evt.type === "block") {
+            const blockPayload = (evt.block && typeof evt.block === "object") ? evt.block : (evt.data && evt.data.block && typeof evt.data.block === "object" ? evt.data.block : (evt.data && evt.data.type ? evt.data : null));
+            if (blockPayload && blockPayload.type === "text" && blockPayload.data && typeof blockPayload.data.text === "string") answer = blockPayload.data.text;
+          }
+          if (evt.type === "updateBlock") {
+            const ops = Array.isArray(evt.patch) ? evt.patch : (evt.data && Array.isArray(evt.data.ops) ? evt.data.ops : []);
+            const replace = ops.find((op) => op && op.op === "replace" && (op.path === "/text" || op.path === "/data/text"));
             if (replace && typeof replace.value === "string") answer = replace.value;
           }
           if (evt.type === "response" && evt.data && typeof evt.data.answer === "string") answer = evt.data.answer;

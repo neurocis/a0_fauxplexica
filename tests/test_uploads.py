@@ -78,6 +78,7 @@ async def test_ingest_txt_uses_context_scoped_memory_and_metadata(tmp_path, cont
     assert doc.metadata["chunk_index"] == 0
     assert doc.metadata["total_chunks"] == 1
     assert manager.last_ingest_result["chunks_indexed"] == 1
+    assert doc.metadata["url"] == "file_id://file-1"
 
 
 @pytest.mark.asyncio
@@ -129,3 +130,47 @@ async def test_unsupported_image_returns_error(tmp_path, context):
     assert isinstance(result, dict)
     assert "Image uploads are deferred" in result["error"]
     assert fake_memory.inserted == []
+
+
+class StubMemory:
+    def __init__(self, results_per_query):
+        self._results = results_per_query
+        self.calls = []
+
+    async def search_similarity_threshold(self, query, limit, threshold, filter=""):
+        self.calls.append((query, limit, filter))
+        return list(self._results.get(query, []))
+
+
+@pytest.mark.asyncio
+async def test_search_fuses_multi_query_results_with_rrf(context):
+    doc1 = Document(page_content="A", metadata={"id": "d1", "file_id": "f1", "url": "file_id://f1"})
+    doc2 = Document(page_content="B", metadata={"id": "d2", "file_id": "f2", "url": "file_id://f2"})
+    doc3 = Document(page_content="C", metadata={"id": "d3", "file_id": "f3", "url": "file_id://f3"})
+    memory = StubMemory({
+        "q1": [doc1, doc2],
+        "q2": [doc2, doc3],
+    })
+
+    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=memory)):
+        manager = UploadsManager(context)
+        fused = await manager.search(["q1", "q2"], k=3)
+
+    ids = [item["metadata"]["id"] for item in fused]
+    assert ids[0] == "d2"
+    assert set(ids) == {"d1", "d2", "d3"}
+    rrf_scores = {item["metadata"]["id"]: item["rrf_score"] for item in fused}
+    assert rrf_scores["d2"] > rrf_scores["d1"]
+    assert rrf_scores["d2"] > rrf_scores["d3"]
+    assert [call[0] for call in memory.calls] == ["q1", "q2"]
+
+
+@pytest.mark.asyncio
+async def test_search_single_query_returns_results_without_rrf_score(context):
+    doc = Document(page_content="A", metadata={"id": "d1", "file_id": "f1"})
+    memory = StubMemory({"q": [doc]})
+    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=memory)):
+        manager = UploadsManager(context)
+        results = await manager.search("q", k=2)
+    assert results[0]["metadata"]["id"] == "d1"
+    assert "rrf_score" not in results[0]
