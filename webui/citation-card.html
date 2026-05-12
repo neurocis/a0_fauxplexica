@@ -1,6 +1,13 @@
-<!-- TODO: WebUI — Citation card template; see PLAN_PHASE1.md §3 -->
 <template id="fauxplexica-citation-card">
-  <article class="fauxplexica-citation-card">
-    <!-- TODO(WebUI): favicon, title, snippet, domain, [n] badge, click-through -->
+  <article class="fauxplexica-citation-card" data-index="" tabindex="0">
+    <header class="fpx-row" style="justify-content:space-between;align-items:flex-start;gap:6px;">
+      <a class="fpx-cite-title" href="#" target="_blank" rel="noopener noreferrer"></a>
+      <span class="fpx-cite-badge" style="font-weight:600;">[1]</span>
+    </header>
+    <p class="fpx-cite-snippet fpx-meta" style="margin:6px 0 0 0;"></p>
+    <footer class="fpx-meta fpx-row" style="justify-content:space-between;margin-top:6px;">
+      <span class="fpx-cite-source"></span>
+      <span class="fpx-cite-score"></span>
+    </footer>
   </article>
 </template>
