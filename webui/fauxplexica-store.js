@@ -1,3 +1,4 @@
+import { createStore } from "/js/AlpineStore.js";
 // A0_Fauxplexica WebUI store and renderer.
 // Implements Phase 1 search panel, blockstream renderer, citation sidebar,
 // uploads hooks, and providers/config panel.
@@ -223,7 +224,7 @@ export async function renderConfigPanel(container) {
 export async function initPanel({ root = document } = {}) {
   const form = root.getElementById ? root.getElementById("fpx-form") : document.getElementById("fpx-form");
   if (!form) return null;
-  if (form.dataset.fauxplexicaInitialized === "true") return window.__A0FauxplexicaState || null;
+  if (form.dataset.fauxplexicaInitialized === "true") return (typeof window !== "undefined" ? window.__A0FauxplexicaState : null) || null;
   form.dataset.fauxplexicaInitialized = "true";
   const queryEl = el("fpx-query");
   const streamEl = el("fpx-stream");
@@ -347,7 +348,6 @@ export async function initPanel({ root = document } = {}) {
     return false;
   };
 
-  window.A0FauxplexicaRunSearch = handleSearch;
   form.addEventListener("submit", handleSearch);
   submitEl.addEventListener("click", handleSearch);
   queryEl.addEventListener("keydown", (ev) => {
@@ -378,7 +378,7 @@ export async function initPanel({ root = document } = {}) {
     el("fpx-uploads-results").textContent = JSON.stringify(res && res.results ? res.results : res, null, 2);
   });
 
-  window.__A0FauxplexicaState = state;
+  if (typeof window !== "undefined") window.__A0FauxplexicaState = state;
   return state;
 }
 
@@ -416,30 +416,29 @@ export const FauxplexicaStore = {
   normalizeRegistry,
 };
 
-if (typeof window !== "undefined" && typeof document !== "undefined") {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => { initPanel().catch((err) => console.error("Fauxplexica init failed", err)); });
-  } else {
-    initPanel().catch((err) => console.error("Fauxplexica init failed", err));
-  }
-}
 
+// Agent Zero modal integration. Working plugins use Alpine stores with
+// x-init="$store.<name>.onOpen()"; keep DOM renderer/test exports above, but
+// let A0 own lifecycle through this store.
+export const store = createStore("fauxplexica", {
+  state: null,
+  error: "",
 
-// Agent Zero plugin modals may either execute this file as a module script from
-// main.html or dynamically import it while injecting the modal HTML. In both
-// cases, self-initialize once the panel exists so buttons are always wired.
-if (typeof window !== "undefined" && !window.__A0FauxplexicaAutoInitQueued) {
-  window.__A0FauxplexicaAutoInitQueued = true;
-  const boot = () => {
-    if (document.getElementById("fpx-form") && !window.__A0FauxplexicaInitialized) {
-      window.__A0FauxplexicaInitialized = true;
-      initPanel({ root: document }).catch((err) => {
-        const status = document.getElementById("fpx-status");
-        if (status) status.textContent = `Fauxplexica UI init failed: ${err.message || err}`;
-        console.error("A0_Fauxplexica init failed", err);
-      });
+  async onOpen() {
+    try {
+      this.error = "";
+      this.state = await initPanel({ root: document });
+    } catch (err) {
+      this.error = err?.message || String(err);
+      const status = document.getElementById("fpx-status");
+      if (status) status.textContent = `Fauxplexica UI init failed: ${this.error}`;
+      console.error("A0_Fauxplexica init failed", err);
     }
-  };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
-  else queueMicrotask(boot);
-}
+  },
+
+  cleanup() {
+    const st = this.state;
+    if (st && st.abortController) st.abortController.abort();
+    this.state = null;
+  }
+});

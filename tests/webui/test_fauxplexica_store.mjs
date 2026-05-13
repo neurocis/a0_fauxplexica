@@ -1,12 +1,21 @@
 import { strict as assert } from 'node:assert';
-import {
+import fs from 'node:fs';
+
+const sourcePath = new URL('../../webui/fauxplexica-store.js', import.meta.url);
+let source = fs.readFileSync(sourcePath, 'utf8');
+source = source.replace(
+  'import { createStore } from "/js/AlpineStore.js";',
+  'const createStore = (name, store) => store;'
+);
+const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+const {
   parseNdjsonStream,
   classifyMode,
   buildSearchRequest,
   renderInlineCitations,
   normalizeRegistry,
   blocksToText,
-} from '../../webui/fauxplexica-store.js';
+} = await import(moduleUrl);
 
 const stream = ['{"type":"init","data":{"query":"q"}}','{"type":"response","data":{"answer":"a"}}','{"type":"done","data":{}}'].join('\n');
 const events = parseNdjsonStream(stream);
