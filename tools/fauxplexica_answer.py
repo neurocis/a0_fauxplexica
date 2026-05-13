@@ -1,6 +1,9 @@
-"""Compose-final-answer tool — assembles the answer from collected sources via the composer + citer.
+"""Alias tool: same as ``fauxplexica_search`` but named for answer-style usage."""
 
-Part of the A0_Fauxplexica plugin. See PLAN_PHASE1.md §3 (Plugin Layout) and §6 (Roster).
-"""
+from __future__ import annotations
 
-# TODO(Compo): implement — see PLAN_PHASE1.md §3 and §6 for scope and dependencies.
+from plugins.a0_fauxplexica.tools.fauxplexica_search import FauxplexicaSearch
+
+
+class FauxplexicaAnswer(FauxplexicaSearch):
+    """Compose-final-answer tool — runs the Fauxplexica pipeline."""
