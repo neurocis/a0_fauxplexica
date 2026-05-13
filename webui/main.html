@@ -2,99 +2,121 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>A0_Fauxplexica — Search</title>
+  <title>A0_Fauxplexica — Deep Research</title>
   <script type="module" src="/usr/plugins/a0_fauxplexica/webui/fauxplexica-store.js"></script>
   <style>
     :root { color-scheme: light dark; }
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 16px; }
-    .fpx-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; }
-    .fpx-card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 8px; padding: 12px; }
+    .fpx-wrap { display: flex; flex-direction: column; gap: 14px; max-width: 820px; }
+    .fpx-title { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; }
+    .fpx-title .fpx-icon { font-size: 22px; }
+    .fpx-desc { font-size: 12px; opacity: 0.75; line-height: 1.4; }
+    .fpx-card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
     .fpx-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .fpx-input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); font: inherit; }
-    .fpx-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: color-mix(in srgb, currentColor 8%, transparent); font: inherit; cursor: pointer; }
-    .fpx-btn[aria-pressed="true"] { background: color-mix(in srgb, royalblue 30%, transparent); }
-    .fpx-chip { padding: 4px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); cursor: pointer; }
-    .fpx-chip[aria-pressed="true"] { background: color-mix(in srgb, mediumseagreen 30%, transparent); }
-    .fpx-mode-btn { display: inline-flex; align-items: center; gap: 6px; }
-    .fpx-mode-icon { font-size: 14px; line-height: 1; }
-    .fpx-mode-beta { font-size: 10px; padding: 1px 6px; margin-left: 4px; border-radius: 999px; background: color-mix(in srgb, #2196F3 35%, transparent); color: white; font-weight: 600; letter-spacing: 0.5px; }
-    .fpx-block { margin: 6px 0; padding: 6px 8px; border-left: 3px solid color-mix(in srgb, royalblue 50%, transparent); background: color-mix(in srgb, currentColor 6%, transparent); border-radius: 6px; white-space: pre-wrap; }
-    .fpx-block[data-type="error"] { border-color: tomato; background: color-mix(in srgb, tomato 12%, transparent); }
-    .fpx-cite { color: royalblue; cursor: pointer; text-decoration: none; }
-    .fpx-cite:hover { text-decoration: underline; }
-    .fpx-cite.active { background: color-mix(in srgb, royalblue 25%, transparent); border-radius: 3px; }
-    .fpx-side { display: flex; flex-direction: column; gap: 8px; }
-    .fpx-side .fauxplexica-citation-card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 8px; padding: 10px; }
-    .fpx-side .fauxplexica-citation-card.active { border-color: royalblue; }
-    .fpx-side .fauxplexica-citation-card a { color: inherit; text-decoration: none; }
+    .fpx-row.stack { flex-direction: column; align-items: stretch; gap: 8px; }
+    .fpx-input, .fpx-textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); font: inherit; background: transparent; color: inherit; box-sizing: border-box; }
+    .fpx-textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
+    .fpx-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: color-mix(in srgb, currentColor 8%, transparent); font: inherit; cursor: pointer; color: inherit; display: inline-flex; align-items: center; gap: 6px; }
+    .fpx-btn:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+    .fpx-btn.primary { background: color-mix(in srgb, royalblue 45%, transparent); border-color: color-mix(in srgb, royalblue 55%, transparent); color: white; }
+    .fpx-btn.primary:hover { background: color-mix(in srgb, royalblue 60%, transparent); }
+    .fpx-btn.primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .fpx-btn[aria-pressed="true"] { background: color-mix(in srgb, royalblue 30%, transparent); border-color: color-mix(in srgb, royalblue 50%, transparent); }
+    .fpx-chip { padding: 5px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); cursor: pointer; font-size: 13px; background: transparent; color: inherit; }
+    .fpx-chip[aria-pressed="true"] { background: color-mix(in srgb, mediumseagreen 30%, transparent); border-color: color-mix(in srgb, mediumseagreen 50%, transparent); }
+    .fpx-section-label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.06em; }
     .fpx-meta { font-size: 12px; opacity: 0.75; }
-    .fpx-uploads { display: flex; flex-direction: column; gap: 6px; }
-    .fpx-error { color: tomato; }
+    .fpx-warn { color: #c97d00; font-size: 13px; padding: 8px 10px; border: 1px solid color-mix(in srgb, #c97d00 35%, transparent); background: color-mix(in srgb, #c97d00 12%, transparent); border-radius: 8px; }
+    .fpx-err { color: tomato; font-size: 13px; padding: 8px 10px; border: 1px solid color-mix(in srgb, tomato 35%, transparent); background: color-mix(in srgb, tomato 12%, transparent); border-radius: 8px; }
+    .fpx-ok { color: #2e7d32; font-size: 13px; padding: 8px 10px; border: 1px solid color-mix(in srgb, #2e7d32 35%, transparent); background: color-mix(in srgb, #2e7d32 12%, transparent); border-radius: 8px; }
+    .fpx-preview { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, currentColor 8%, transparent); border: 1px dashed color-mix(in srgb, currentColor 25%, transparent); }
+    .fpx-mode-beta { font-size: 10px; padding: 1px 6px; margin-left: 4px; border-radius: 999px; background: color-mix(in srgb, #2196F3 35%, transparent); color: white; font-weight: 600; letter-spacing: 0.5px; }
   </style>
 </head>
 <body>
   <div x-data>
     <template x-if="$store.fauxplexica">
-      <div x-init="$store.fauxplexica.onOpen()" x-destroy="$store.fauxplexica.cleanup()">
-        <main class="fpx-grid" id="fauxplexica-panel">
-    <section class="fpx-card">
-      <h1 style="margin:0 0 8px 0;font-size:18px;">A0_Fauxplexica</h1>
-      <form id="fpx-form" class="fpx-row" style="flex-direction:column;align-items:stretch;gap:8px;">
-        <label for="fpx-query" class="fpx-meta">Ask a question</label>
-        <input id="fpx-query" class="fpx-input" type="text" placeholder="Search the web with citations…" autocomplete="off" required />
-        <div class="fpx-row" id="fpx-modes" role="group" aria-label="Search mode">
-          <button type="button" class="fpx-btn fpx-mode-btn" data-mode="speed" title="Fastest useful answer with minimal search depth.">
-            <span class="fpx-mode-icon" aria-hidden="true" style="color:#FF9800;">⚡</span>
-            <span class="fpx-mode-label">Speed</span>
-          </button>
-          <button type="button" class="fpx-btn fpx-mode-btn" data-mode="balanced" aria-pressed="true" title="Parallel research with good citation coverage.">
-            <span class="fpx-mode-icon" aria-hidden="true" style="color:#4CAF50;">⚖</span>
-            <span class="fpx-mode-label">Balanced</span>
-          </button>
-          <button type="button" class="fpx-btn fpx-mode-btn" data-mode="quality" title="Deeper multi-hop research, page reading and careful synthesis.">
-            <span class="fpx-mode-icon" aria-hidden="true" style="color:#2196F3;">★</span>
-            <span class="fpx-mode-label">Quality</span>
-            <span class="fpx-mode-beta" aria-label="Beta">Beta</span>
-          </button>
-          <label class="fpx-meta" style="margin-left:auto;"><input id="fpx-stream" type="checkbox" checked /> Stream</label>
+      <div x-init="$store.fauxplexica.onOpen()" x-destroy="$store.fauxplexica.cleanup()" class="fpx-wrap">
+
+        <div class="fpx-title">
+          <span class="fpx-icon" aria-hidden="true">🔭</span>
+          <span>Deep Research</span>
         </div>
-        <div class="fpx-row" id="fpx-sources" aria-label="Sources"></div>
-        <div class="fpx-row" id="fpx-widgets" aria-label="Widgets"></div>
-        <div class="fpx-row">
-          <button class="fpx-btn" type="button" id="fpx-submit">Search</button>
-          <button class="fpx-btn" type="button" id="fpx-cancel" disabled>Stop</button>
-          <span class="fpx-meta" id="fpx-status">Ready.</span>
+        <div class="fpx-desc">
+          This panel dispatches a <code>fauxplexica_search</code> tool call into the chat you currently have open. The agent will execute the search there and you'll see the full mechanics — tool call, retrieval, citations, and composed answer — directly in the conversation.
         </div>
-        <div id="fpx-config-warning" class="fpx-meta fpx-error" hidden></div>
-      </form>
-      <section class="fpx-card" style="margin-top:12px;">
-        <h2 style="margin:0 0 6px 0;font-size:14px;">Uploads</h2>
-        <div class="fpx-uploads">
-          <div class="fpx-row">
-            <input id="fpx-upload-path" class="fpx-input" type="text" placeholder="Absolute file path to ingest (PDF, TXT, MD, CSV, DOCX)" />
-            <button id="fpx-upload-btn" class="fpx-btn" type="button">Upload</button>
+
+        <template x-if="!$store.fauxplexica.hasContext">
+          <div class="fpx-warn">
+            No chat is currently open. Please open or create a chat first, then reopen Deep Research.
           </div>
-          <div class="fpx-meta" id="fpx-upload-status"></div>
-          <div class="fpx-row">
-            <input id="fpx-uploads-query" class="fpx-input" type="text" placeholder="Search uploaded files" />
-            <button id="fpx-uploads-search-btn" class="fpx-btn" type="button">Search Uploads</button>
+        </template>
+
+        <template x-if="$store.fauxplexica.lastError">
+          <div class="fpx-err" x-text="$store.fauxplexica.lastError"></div>
+        </template>
+
+        <template x-if="$store.fauxplexica.lastOk">
+          <div class="fpx-ok" x-text="$store.fauxplexica.lastOk"></div>
+        </template>
+
+        <div class="fpx-card">
+          <div class="fpx-row stack">
+            <label for="fpx-query" class="fpx-section-label">Research question</label>
+            <textarea id="fpx-query" class="fpx-textarea" placeholder="Ask anything — Fauxplexica will search the web, weigh sources, and answer with citations." x-model="$store.fauxplexica.query" @keydown.enter.prevent="$event.metaKey || $event.ctrlKey ? $store.fauxplexica.dispatch() : null"></textarea>
+            <div class="fpx-meta">Tip: ⌘/Ctrl + Enter to dispatch.</div>
           </div>
-          <div class="fpx-meta" id="fpx-uploads-results"></div>
+
+          <div class="fpx-row stack">
+            <span class="fpx-section-label">Mode</span>
+            <div class="fpx-row">
+              <button type="button" class="fpx-btn" :aria-pressed="$store.fauxplexica.mode === 'speed'" @click="$store.fauxplexica.mode = 'speed'">
+                <span aria-hidden="true" style="color:#FF9800;">⚡</span><span>Speed</span>
+              </button>
+              <button type="button" class="fpx-btn" :aria-pressed="$store.fauxplexica.mode === 'balanced'" @click="$store.fauxplexica.mode = 'balanced'">
+                <span aria-hidden="true" style="color:#4CAF50;">⚖</span><span>Balanced</span>
+              </button>
+              <button type="button" class="fpx-btn" :aria-pressed="$store.fauxplexica.mode === 'quality'" @click="$store.fauxplexica.mode = 'quality'">
+                <span aria-hidden="true" style="color:#2196F3;">★</span><span>Quality</span>
+                <span class="fpx-mode-beta" aria-label="Beta">Beta</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="fpx-row stack">
+            <span class="fpx-section-label">Sources</span>
+            <div class="fpx-row">
+              <template x-for="src in $store.fauxplexica.sourceOptions" :key="src.id">
+                <button type="button" class="fpx-chip" :aria-pressed="$store.fauxplexica.sources[src.id]" @click="$store.fauxplexica.toggleSource(src.id)" x-text="src.label"></button>
+              </template>
+            </div>
+          </div>
+
+          <div class="fpx-row stack">
+            <span class="fpx-section-label">Widgets</span>
+            <div class="fpx-row">
+              <template x-for="w in $store.fauxplexica.widgetOptions" :key="w.id">
+                <button type="button" class="fpx-chip" :aria-pressed="$store.fauxplexica.widgets[w.id]" @click="$store.fauxplexica.toggleWidget(w.id)" x-text="w.label"></button>
+              </template>
+            </div>
+          </div>
+
+          <div class="fpx-row">
+            <button type="button" class="fpx-btn primary" :disabled="!$store.fauxplexica.canDispatch" @click="$store.fauxplexica.dispatch()">
+              <span aria-hidden="true">🚀</span>
+              <span>Run in current chat</span>
+            </button>
+            <button type="button" class="fpx-btn" @click="$store.fauxplexica.reset()">Reset</button>
+            <span class="fpx-meta" x-text="$store.fauxplexica.statusLine"></span>
+          </div>
         </div>
-      </section>
-      <section class="fpx-card" style="margin-top:12px;">
-        <h2 style="margin:0 0 6px 0;font-size:14px;">Answer</h2>
-        <div id="fpx-blocks"></div>
-        <article id="fpx-answer" class="fpx-block" data-type="text" style="display:none;"></article>
-        <div class="fpx-meta" id="fpx-summary"></div>
-      </section>
-    </section>
-    <aside class="fpx-card fpx-side" aria-label="Citation sidebar">
-      <h2 style="margin:0;font-size:14px;">Sources</h2>
-      <div class="fpx-meta">Rich sidebar citations</div>
-      <div id="fpx-citations"></div>
-    </aside>
-        </main>
+
+        <div class="fpx-card">
+          <span class="fpx-section-label">Tool call preview</span>
+          <div class="fpx-preview" x-text="$store.fauxplexica.previewText"></div>
+          <div class="fpx-meta">This is exactly what gets sent to your current chat. The agent will respond by invoking the <code>fauxplexica_search</code> tool with these arguments.</div>
+        </div>
+
       </div>
     </template>
   </div>
