@@ -17,7 +17,10 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any, Optional
 
-import httpx
+try:
+    import httpx
+except ModuleNotFoundError:  # pragma: no cover
+    httpx = None
 
 from ..helpers.widgets_registry import WidgetOutput, build_failure_output
 
@@ -98,6 +101,9 @@ class WeatherWidget:
         llm: Any,
         http_client: Optional[httpx.AsyncClient] = None,
     ) -> Optional[WidgetOutput]:
+        if httpx is None:
+            _log.warning("weather: httpx is not installed; weather widget unavailable")
+            return build_failure_output(self.type, "Weather widget dependency 'httpx' is not installed in the backend runtime.")
         # Stage 1: extract location.
         try:
             location = await _extract_location(follow_up, chat_history, llm)

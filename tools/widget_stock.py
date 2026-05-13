@@ -22,7 +22,10 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any, List, Optional
 
-import yfinance as yf
+try:
+    import yfinance as yf
+except ModuleNotFoundError:  # pragma: no cover
+    yf = None
 
 from ..helpers.widget_cache import stock_chart_cache, stock_quote_cache
 from ..helpers.widgets_registry import WidgetOutput, build_failure_output
@@ -73,6 +76,9 @@ class StockWidget:
         classification: "ClassifierOutput",
         llm: Any,
     ) -> Optional[WidgetOutput]:
+        if yf is None:
+            _log.warning("stock: yfinance is not installed; stock widget unavailable")
+            return build_failure_output(self.type, "Stock widget dependency 'yfinance' is not installed in the backend runtime.")
         # Stage 1: extract tickers.
         try:
             params = await _extract_tickers(follow_up, chat_history, llm)

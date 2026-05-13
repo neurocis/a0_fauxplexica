@@ -243,3 +243,40 @@ async def test_execute_all_does_not_import_disabled_calculator(monkeypatch):
         enabled={"weather"},
     )
     assert out == []
+
+@pytest.mark.asyncio
+async def test_execute_all_does_not_import_disabled_widget_modules(monkeypatch):
+    """Disabled widget toggles must skip importing those widget modules."""
+    import builtins
+    from a0_fauxplexica.helpers import widgets_registry
+
+    real_import = builtins.__import__
+    forbidden = {"widget_calc", "widget_stock", "widget_weather", "asteval", "yfinance", "httpx"}
+
+    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+        leaf = name.rsplit(".", 1)[-1]
+        if leaf in forbidden:
+            raise AssertionError(f"disabled widget unexpectedly imported {name}")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+    class Routing:
+        class Widgets:
+            weather = False
+            stock = False
+            calculation = False
+        widgets = Widgets()
+
+    class Classification:
+        routing = Routing()
+
+    out = await widgets_registry.execute_all(
+        classification=Classification(),
+        chat_history=[],
+        follow_up="hi",
+        llm=None,
+        enabled=set(),
+    )
+    assert out == []
+
