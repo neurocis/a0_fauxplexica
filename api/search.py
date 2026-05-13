@@ -122,6 +122,7 @@ class FauxplexicaSearch(ApiHandler):
 
         block_stream = BlockStream()
         try:
+            llm_adapter = _build_llm_adapter(_resolve_agent(context) if agent is None else agent)
             result = await run_fauxplexica_search(
                 query=query,
                 chat_history=chat_history,
@@ -129,6 +130,7 @@ class FauxplexicaSearch(ApiHandler):
                 enabled_sources=enabled_sources,
                 enabled_widgets=enabled_widgets,
                 file_ids=file_ids,
+                llm=llm_adapter,
                 config=config,
                 agent_context=context,
                 block_stream=block_stream,
@@ -214,3 +216,48 @@ def _json_error(code: str, message: str, *, status: int, details: dict | None = 
         status=status,
         mimetype="application/json",
     )
+
+def _build_llm_adapter(agent: Any) -> Any:
+    """Wrap ``agent.call_utility_model`` into the simple ``llm(system, message)`` shape.
+
+    Fauxplexica's classifier/composer/widgets all expect an async callable
+    ``llm(system: str, message: str) -> str``. Agent Zero exposes the utility
+    model via ``agent.call_utility_model(system=..., message=...)``; this adapter
+    bridges the two without leaking any other agent state.
+    """
+    if agent is None:
+        return None
+    call = getattr(agent, "call_utility_model", None)
+    if call is None or not callable(call):
+        return None
+
+    async def _llm(system: str, message: str) -> str:
+        response = await call(system=system, message=message)
+        return str(response or "")
+
+    return _llm
+
+
+def _resolve_agent(context: Any) -> Any:
+    """Best-effort agent lookup from a context or the global registry."""
+    if context is not None:
+        agent = getattr(context, "agent0", None)
+        if agent is None and hasattr(context, "get_agent"):
+            try:
+                agent = context.get_agent()
+            except Exception:  # noqa: BLE001
+                agent = None
+        if agent is not None:
+            return agent
+    try:
+        from agent import AgentContext as _AgentContext  # type: ignore
+    except Exception:  # noqa: BLE001
+        return None
+    try:
+        first = _AgentContext.first()
+    except Exception:  # noqa: BLE001
+        return None
+    if first is None:
+        return None
+    return getattr(first, "agent0", None)
+
