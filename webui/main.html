@@ -35,9 +35,9 @@
   <main class="fpx-grid" id="fauxplexica-panel">
     <section class="fpx-card">
       <h1 style="margin:0 0 8px 0;font-size:18px;">A0_Fauxplexica</h1>
-      <form id="fpx-form" class="fpx-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+      <form id="fpx-form" class="fpx-row" style="flex-direction:column;align-items:stretch;gap:8px;" onsubmit="window.A0FauxplexicaRunSearch && window.A0FauxplexicaRunSearch(event); return false;">
         <label for="fpx-query" class="fpx-meta">Ask a question</label>
-        <input id="fpx-query" class="fpx-input" type="text" placeholder="Search the web with citations…" autocomplete="off" required />
+        <input id="fpx-query" class="fpx-input" type="text" placeholder="Search the web with citations…" autocomplete="off" required onkeydown="if(event.key==='Enter'){ event.preventDefault(); window.A0FauxplexicaRunSearch && window.A0FauxplexicaRunSearch(event); return false; }" />
         <div class="fpx-row" id="fpx-modes" role="group" aria-label="Search mode">
           <button type="button" class="fpx-btn fpx-mode-btn" data-mode="speed" title="Fastest useful answer with minimal search depth.">
             <span class="fpx-mode-icon" aria-hidden="true" style="color:#FF9800;">⚡</span>
@@ -57,7 +57,7 @@
         <div class="fpx-row" id="fpx-sources" aria-label="Sources"></div>
         <div class="fpx-row" id="fpx-widgets" aria-label="Widgets"></div>
         <div class="fpx-row">
-          <button class="fpx-btn" type="button" id="fpx-submit">Search</button>
+          <button class="fpx-btn" type="button" id="fpx-submit" onclick="window.A0FauxplexicaRunSearch && window.A0FauxplexicaRunSearch(event); return false;">Search</button>
           <button class="fpx-btn" type="button" id="fpx-cancel" disabled>Stop</button>
           <span class="fpx-meta" id="fpx-status">Ready.</span>
         </div>
@@ -92,6 +92,15 @@
     </aside>
   </main>
   <link rel="import" href="citation-card.html" />
-  <script type="module" src="/plugins/a0_fauxplexica/webui/fauxplexica-store.js"></script>
+  <script type="module">
+    import { initPanel } from "/plugins/a0_fauxplexica/webui/fauxplexica-store.js";
+    const start = () => initPanel({ root: document }).catch((err) => {
+      const status = document.getElementById("fpx-status");
+      if (status) status.textContent = `Fauxplexica UI init failed: ${err.message || err}`;
+      console.error("A0_Fauxplexica init failed", err);
+    });
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+    else start();
+  </script>
 </body>
 </html>

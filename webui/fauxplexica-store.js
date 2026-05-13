@@ -345,6 +345,7 @@ export async function initPanel({ root = document } = {}) {
     return false;
   };
 
+  window.A0FauxplexicaRunSearch = handleSearch;
   form.addEventListener("submit", handleSearch);
   submitEl.addEventListener("click", handleSearch);
   queryEl.addEventListener("keydown", (ev) => {
@@ -418,4 +419,24 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   } else {
     initPanel().catch((err) => console.error("Fauxplexica init failed", err));
   }
+}
+
+
+// Agent Zero plugin modals may either execute this file as a module script from
+// main.html or dynamically import it while injecting the modal HTML. In both
+// cases, self-initialize once the panel exists so buttons are always wired.
+if (typeof window !== "undefined" && !window.__A0FauxplexicaAutoInitQueued) {
+  window.__A0FauxplexicaAutoInitQueued = true;
+  const boot = () => {
+    if (document.getElementById("fpx-form") && !window.__A0FauxplexicaInitialized) {
+      window.__A0FauxplexicaInitialized = true;
+      initPanel({ root: document }).catch((err) => {
+        const status = document.getElementById("fpx-status");
+        if (status) status.textContent = `Fauxplexica UI init failed: ${err.message || err}`;
+        console.error("A0_Fauxplexica init failed", err);
+      });
+    }
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
+  else queueMicrotask(boot);
 }
