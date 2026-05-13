@@ -96,19 +96,40 @@ def build_failure_output(widget_type: str, error: BaseException | str) -> Widget
     )
 
 
-def _build_widgets() -> List[Widget]:
-    """Construct the canonical widget registry.
+def _build_widgets(enabled: Optional[Set[str]] = None) -> List[Widget]:
+    """Construct the widget registry with per-widget lazy imports.
 
-    Kept in a helper so tests can monkeypatch/inspect without duplicating the
-    import dance. Imports happen after ``WidgetOutput`` is defined, which avoids
-    circular-import trouble because widget modules import this module for the
-    dataclass.
+    ``execute_all`` passes the caller's enabled set here so disabled widgets are
+    not even imported. This matters in Agent Zero runtime installs where an
+    optional dependency for a disabled widget may not be installed yet: turning
+    off the Calculator toggle must not import ``widget_calc``/``asteval``.
+
+    ``enabled=None`` preserves the public ``get_widgets()`` / ``WIDGETS``
+    contract and returns every widget.
     """
-    from ..tools.widget_calc import CalculationWidget
-    from ..tools.widget_stock import StockWidget
-    from ..tools.widget_weather import WeatherWidget
+    widgets: List[Widget] = []
 
-    return [WeatherWidget(), CalculationWidget(), StockWidget()]
+    def wants(widget_type: str) -> bool:
+        if enabled is None:
+            return True
+        aliases = {
+            "calculation_result": {"calculation", "calculator"},
+        }
+        return widget_type in enabled or bool(aliases.get(widget_type, set()) & enabled)
+
+    if wants("weather"):
+        from ..tools.widget_weather import WeatherWidget
+        widgets.append(WeatherWidget())
+
+    if wants("calculation_result"):
+        from ..tools.widget_calc import CalculationWidget
+        widgets.append(CalculationWidget())
+
+    if wants("stock"):
+        from ..tools.widget_stock import StockWidget
+        widgets.append(StockWidget())
+
+    return widgets
 
 
 class _LazyWidgetList(list):
@@ -221,7 +242,7 @@ async def execute_all(
         ``build_failure_output`` results, not exceptions.
     """
     enabled_set: Set[str] = set(enabled)
-    candidates = list(widgets) if widgets is not None else get_widgets()
+    candidates = list(widgets) if widgets is not None else _build_widgets(enabled_set)
 
     # AND-gate: enabled in config AND triggered by classifier.
     selected: List[Widget] = []

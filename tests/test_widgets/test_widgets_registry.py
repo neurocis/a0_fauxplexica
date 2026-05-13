@@ -204,3 +204,42 @@ def test_build_failure_output_shape() -> None:
     assert out.type == "stock"
     assert out.llm_context == "Failed to fetch stock data."
     assert out.data == {"error": "rate limit"}
+
+
+@pytest.mark.asyncio
+async def test_execute_all_does_not_import_disabled_calculator(monkeypatch):
+    """Disabled widgets must not import their optional dependencies.
+
+    This guards the runtime case where calculator/asteval is unavailable but
+    the user has unchecked Calculator in the WebUI.
+    """
+    import builtins
+    from a0_fauxplexica.helpers import widgets_registry
+
+    real_import = builtins.__import__
+
+    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name.endswith("widget_calc") or name == "asteval":
+            raise AssertionError(f"disabled calculator unexpectedly imported {name}")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+    class Routing:
+        class Widgets:
+            weather = False
+            stock = False
+            calculation = True
+        widgets = Widgets()
+
+    class Classification:
+        routing = Routing()
+
+    out = await widgets_registry.execute_all(
+        classification=Classification(),
+        chat_history=[],
+        follow_up="2 + 2",
+        llm=None,
+        enabled={"weather"},
+    )
+    assert out == []
