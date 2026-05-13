@@ -18,7 +18,11 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any, Optional
 
-from asteval import Interpreter
+try:
+    from asteval import Interpreter
+except ModuleNotFoundError:  # pragma: no cover - exercised in backend runtime if optional deps missing
+    Interpreter = None
+
 
 from ..helpers.widgets_registry import WidgetOutput, build_failure_output
 
@@ -75,7 +79,17 @@ class CalculationWidget:
 
         expression = expression.strip()
 
-        # Stage 2: evaluate with asteval.
+        # Stage 2: evaluate with asteval.  If the plugin dependency was not
+        # installed into the Agent Zero backend runtime, do not fail the whole
+        # search: return a structured widget failure and let research/answering
+        # continue.
+        if Interpreter is None:
+            _log.warning("calc: asteval is not installed; calculator widget unavailable")
+            return build_failure_output(
+                self.type,
+                "Calculator widget dependency 'asteval' is not installed in the backend runtime.",
+            )
+
         interp = Interpreter(minimal=False, use_numpy=False)
         try:
             result = interp(expression)
