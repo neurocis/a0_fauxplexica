@@ -270,10 +270,11 @@ export async function initPanel({ root = document } = {}) {
     renderAnswer(answerEl, answerEl.dataset.answer || "", state.registry, onCitationClick);
   };
 
-  form.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
+  const handleSearch = async (ev) => {
+    ev?.preventDefault?.();
+    ev?.stopPropagation?.();
     const query = String(queryEl.value || "").trim();
-    if (!query) return;
+    if (!query) return false;
     submitEl.disabled = true;
     cancelEl.disabled = false;
     setStatus("Searching…");
@@ -341,6 +342,13 @@ export async function initPanel({ root = document } = {}) {
       submitEl.disabled = false;
       cancelEl.disabled = true;
     }
+    return false;
+  };
+
+  form.addEventListener("submit", handleSearch);
+  submitEl.addEventListener("click", handleSearch);
+  queryEl.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") handleSearch(ev);
   });
 
   cancelEl.addEventListener("click", () => {

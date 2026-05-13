@@ -35,7 +35,7 @@
   <main class="fpx-grid" id="fauxplexica-panel">
     <section class="fpx-card">
       <h1 style="margin:0 0 8px 0;font-size:18px;">A0_Fauxplexica</h1>
-      <form @submit.prevent id="fpx-form" class="fpx-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+      <form id="fpx-form" class="fpx-row" style="flex-direction:column;align-items:stretch;gap:8px;">
         <label for="fpx-query" class="fpx-meta">Ask a question</label>
         <input id="fpx-query" class="fpx-input" type="text" placeholder="Search the web with citations…" autocomplete="off" required />
         <div class="fpx-row" id="fpx-modes" role="group" aria-label="Search mode">
@@ -57,7 +57,7 @@
         <div class="fpx-row" id="fpx-sources" aria-label="Sources"></div>
         <div class="fpx-row" id="fpx-widgets" aria-label="Widgets"></div>
         <div class="fpx-row">
-          <button class="fpx-btn" type="submit" id="fpx-submit">Search</button>
+          <button class="fpx-btn" type="button" id="fpx-submit">Search</button>
           <button class="fpx-btn" type="button" id="fpx-cancel" disabled>Stop</button>
           <span class="fpx-meta" id="fpx-status">Ready.</span>
         </div>
