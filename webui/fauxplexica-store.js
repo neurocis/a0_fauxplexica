@@ -223,6 +223,8 @@ export async function renderConfigPanel(container) {
 export async function initPanel({ root = document } = {}) {
   const form = root.getElementById ? root.getElementById("fpx-form") : document.getElementById("fpx-form");
   if (!form) return null;
+  if (form.dataset.fauxplexicaInitialized === "true") return window.__A0FauxplexicaState || null;
+  form.dataset.fauxplexicaInitialized = "true";
   const queryEl = el("fpx-query");
   const streamEl = el("fpx-stream");
   const submitEl = el("fpx-submit");
@@ -376,6 +378,7 @@ export async function initPanel({ root = document } = {}) {
     el("fpx-uploads-results").textContent = JSON.stringify(res && res.results ? res.results : res, null, 2);
   });
 
+  window.__A0FauxplexicaState = state;
   return state;
 }
 
