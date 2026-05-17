@@ -35,13 +35,5 @@ Thumbs.db
 *.log
 *.tmp
 
-# Agent Zero project-local state (never commit secrets, runtime config, or memory indexes)
-.a0proj/secrets.env
-.a0proj/variables.env
-.a0proj/memory/
-.a0proj/knowledge/
-.a0proj/plugins/*/config.json
-.a0proj/plugins/*/drafts/
+# Runtime per-user config
 config.json
-execute_record.json
-.dependency_status.json
