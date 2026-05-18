@@ -8,7 +8,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from plugins.a0_fauxplexica.helpers.uploads import Document, UploadsManager
+from pathlib import Path
+import sys
+
+_PLUGIN_PARENT = Path(__file__).resolve().parents[2]
+if str(_PLUGIN_PARENT) not in sys.path:
+    sys.path.append(str(_PLUGIN_PARENT))
+
+from a0_fauxplexica.helpers.uploads import Document, UploadsManager
 
 
 class FakeDB:
@@ -62,7 +69,7 @@ async def test_ingest_txt_uses_context_scoped_memory_and_metadata(tmp_path, cont
     path = tmp_path / "notes.txt"
     path.write_text("hello uploaded world", encoding="utf-8")
 
-    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)) as get_by_subdir:
+    with patch("a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)) as get_by_subdir:
         manager = UploadsManager(context)
         file_id = await manager.ingest_file(str(path), file_id="file-1")
 
@@ -89,7 +96,7 @@ async def test_search_applies_file_id_override_filter(context):
         metadata={"id": "doc-1", "area": "fauxplexica_uploads", "file_id": "f1", "filename": "a.txt"},
     )
 
-    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)):
+    with patch("a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)):
         manager = UploadsManager(context)
         results = await manager.search("alpha", ["f1", "f2"], k=3)
 
@@ -106,7 +113,7 @@ async def test_list_and_remove_files(context):
     fake_memory.db.docs["doc-2"] = Document(page_content="b", metadata={"id": "doc-2", "area": "fauxplexica_uploads", "file_id": "f1", "filename": "a.txt", "total_chunks": 2})
     fake_memory.db.docs["doc-3"] = Document(page_content="c", metadata={"id": "doc-3", "area": "main", "file_id": "other"})
 
-    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)):
+    with patch("a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)):
         manager = UploadsManager(context)
         files = await manager.list_files()
         removed = await manager.remove_file("f1")
@@ -123,7 +130,7 @@ async def test_unsupported_image_returns_error(tmp_path, context):
     path = tmp_path / "image.png"
     path.write_bytes(b"not really an image")
 
-    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)):
+    with patch("a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=fake_memory)):
         manager = UploadsManager(context)
         result = await manager.ingest_file(str(path))
 
@@ -152,7 +159,7 @@ async def test_search_fuses_multi_query_results_with_rrf(context):
         "q2": [doc2, doc3],
     })
 
-    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=memory)):
+    with patch("a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=memory)):
         manager = UploadsManager(context)
         fused = await manager.search(["q1", "q2"], k=3)
 
@@ -169,7 +176,7 @@ async def test_search_fuses_multi_query_results_with_rrf(context):
 async def test_search_single_query_returns_results_without_rrf_score(context):
     doc = Document(page_content="A", metadata={"id": "d1", "file_id": "f1"})
     memory = StubMemory({"q": [doc]})
-    with patch("plugins.a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=memory)):
+    with patch("a0_fauxplexica.helpers.uploads.get_uploads_memory", new=AsyncMock(return_value=memory)):
         manager = UploadsManager(context)
         results = await manager.search("q", k=2)
     assert results[0]["metadata"]["id"] == "d1"

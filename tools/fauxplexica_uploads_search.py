@@ -6,7 +6,14 @@ import json
 from typing import Any
 
 from helpers.tool import Response, Tool
-from plugins.a0_fauxplexica.helpers.uploads import UploadsManager
+from pathlib import Path
+import sys
+
+_PLUGIN_PARENT = Path(__file__).resolve().parents[2]
+if str(_PLUGIN_PARENT) not in sys.path:
+    sys.path.append(str(_PLUGIN_PARENT))
+
+from a0_fauxplexica.helpers.uploads import UploadsManager
 
 
 class FauxplexicaUploadsSearch(Tool):

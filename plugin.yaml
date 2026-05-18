@@ -1,7 +1,7 @@
 name: a0_fauxplexica
 title: A0_Fauxplexica
 description: Perplexity/Vane-style AI answering engine for Agent Zero.
-version: 0.2.0
+version: 0.2.1
 settings_sections:
   - agent
   - project

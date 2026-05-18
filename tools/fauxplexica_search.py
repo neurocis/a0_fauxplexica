@@ -15,8 +15,15 @@ import json
 from typing import Any, Iterable
 
 from helpers.tool import Response, Tool
-from plugins.a0_fauxplexica.helpers.blockstream import BlockStream
-from plugins.a0_fauxplexica.helpers.orchestrator import run_fauxplexica_search
+from pathlib import Path
+import sys
+
+_PLUGIN_PARENT = Path(__file__).resolve().parents[2]
+if str(_PLUGIN_PARENT) not in sys.path:
+    sys.path.append(str(_PLUGIN_PARENT))
+
+from a0_fauxplexica.helpers.blockstream import BlockStream
+from a0_fauxplexica.helpers.orchestrator import run_fauxplexica_search
 
 
 _VALID_MODES = {"speed", "balanced", "quality"}
